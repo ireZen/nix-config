@@ -2,7 +2,7 @@
   imports = [../modules/variables-config.nix];
 
   config.var = {
-    hostname = "ganymede";
+    hostname = "io";
     username = "angerzen";
     homeDirectory = "/home/" + config.var.username;
     configDirectory = config.var.homeDirectory + "/.config/nixos";

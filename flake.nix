@@ -14,19 +14,14 @@
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
-    hyprland = {
-      url = "github:hyprwm/Hyprland";
+
+    noctalia = {
+      url = "github:noctalia-dev/noctalia";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.hyprland.follows = "hyprland";
-    };
-
-    hyprland-contrib = {
-      url = "github:hyprwm/contrib";
+    noctalia-greeter = {
+      url = "github:noctalia-dev/noctalia-greeter";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -43,31 +38,48 @@
     home-manager,
     ...
   } @ inputs: let
-    inherit (self) outputs;
+    supportedSystems = ["x86_64-linux"];
+    forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+
+    # Every host is a NixOS system with home-manager wired in the same way;
+    # extraModules carries the flake-pinned modules a given host actually needs
+    # (e.g. the niri/nix-citizen/noctalia NixOS modules) so their inputs are
+    # honored instead of silently falling back to whatever nixpkgs bundles.
+    mkHost = {
+      hostname,
+      extraModules ? [],
+    }:
+      nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit inputs;};
+        modules =
+          [
+            {nixpkgs.overlays = [inputs.nur.overlays.default];}
+
+            inputs.home-manager.nixosModules.home-manager
+
+            ./hosts/${hostname}/configuration.nix
+          ]
+          ++ extraModules;
+      };
   in {
-    formatter = pkgs: pkgs.alejandra;
+    formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
 
     nixosConfigurations = {
-      ganymede = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs outputs;};
-        modules = [
-          inputs.home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-          }
-          ./hosts/ganymede/configuration.nix
+      ganymede = mkHost {
+        hostname = "ganymede";
+        extraModules = [
+          inputs.niri.nixosModules.niri
+          inputs.noctalia.nixosModules.default
+          inputs.noctalia-greeter.nixosModules.default
+          inputs.nix-citizen.nixosModules
         ];
       };
-      io = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs outputs;};
-        modules = [
-          inputs.home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-          }
-          ./hosts/io/configuration.nix
+      io = mkHost {
+        hostname = "io";
+        extraModules = [
+          inputs.niri.nixosModules.niri
+          inputs.noctalia.nixosModules.default
+          inputs.noctalia-greeter.nixosModules.default
         ];
       };
     };

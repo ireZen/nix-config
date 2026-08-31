@@ -6,7 +6,6 @@
   services.xserver.videoDrivers = ["nvidia"]; # or "nvidiaLegacy470 etc.
 
   environment.variables = {
-    __GL_GSYNC_ALLOWED = "1";
     LIBVA_DRIVER_NAME = "nvidia";
     XDG_SESSION_TYPE = "wayland";
     GBM_BACKEND = "nvidia-drm";
@@ -25,10 +24,12 @@
       enable32Bit = true;
     };
     nvidia = {
-      open = false;
+      # Turing (RTX 20xx) and newer: NVIDIA recommends the open kernel
+      # modules over the proprietary ones. Only set this to false if the
+      # card predates Turing.
+      open = true;
       nvidiaSettings = true;
       powerManagement.enable = false; # This can cause sleep/suspend to fail and saves entire VRAM to /tmp/
-      forceFullCompositionPipeline = true;
       modesetting.enable = true;
       package = config.boot.kernelPackages.nvidiaPackages.latest;
     };
