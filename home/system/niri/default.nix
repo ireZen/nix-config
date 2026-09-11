@@ -18,7 +18,7 @@ in {
   # niri-flake auto-forwards programs.niri.settings here since home-manager is present.
   programs.noctalia = {
     enable = true;
-    recommendedServices.enable = true;
+    # recommendedServices.enable = true;
   };
 
   # Generic Wayland-compositor utilities (not niri-specific, just no longer
@@ -38,21 +38,6 @@ in {
     name = "Bibata-Modern-Ice";
     size = 24;
     gtk.enable = true;
-  };
-
-  services.swayidle = {
-    enable = true;
-    timeouts = [
-      {
-        timeout = 300;
-        command = "noctalia msg session lock";
-      }
-      {
-        timeout = 600;
-        command = "${idleSuspend}";
-      }
-    ];
-    beforeSleep = ["noctalia msg session lock"];
   };
 
   programs.niri.settings = {

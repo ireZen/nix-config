@@ -10,9 +10,7 @@
     ../../home/programs/btop
     ../../home/programs/vivaldi
     ../../home/programs/alacritty
-    ../../home/programs/neofetch
     ../../home/programs/git
-    ../../home/programs/vscode
     ../../home/programs/discord
     # ../../home/programs/games
 
@@ -42,8 +40,10 @@
       nixd
       alejandra
       nixfmt-rfc-style
+      vscode
 
       # Utils
+      sublime4
       zip
       unzip
       glow
@@ -53,11 +53,6 @@
       swappy
       imv
       dconf
-      rocketchat-desktop
-      pkgs.qt6Packages.qtstyleplugin-kvantum
-      pkgs.qt6Packages.qt6ct
-      pkgs.libsForQt5.qtstyleplugin-kvantum
-      pkgs.libsForQt5.qt5ct
     ];
 
     # Import wallpapers into $HOME/wallpapers

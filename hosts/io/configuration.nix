@@ -1,6 +1,6 @@
-{config, ...}: {
+{config, pkgs, ...}: {
   imports = [
-    ../modules/fonts.nix
+    # ../modules/fonts.nix
     ../modules/noctalia-greeter.nix
     ../modules/auto-upgrade.nix
     ../modules/timezone.nix
@@ -29,6 +29,11 @@
   # programs.niri.settings to home-manager -- the actual config lives in
   # home/system/niri, imported via home.nix.
   programs.niri.enable = true;
+  programs.niri.package = pkgs.niri;
+
+  permittedInsecurePackages = [
+    "openssl-1.1.1w"
+  ];
 
   # Don't touch this
   system.stateVersion = "24.05";
