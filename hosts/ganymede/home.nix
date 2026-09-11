@@ -8,21 +8,17 @@
 
     # Programs
     ../../home/programs/btop
-    # ../../home/programs/vivaldi
     ../../home/programs/alacritty
     ../../home/programs/git
     ../../home/programs/discord
     ../../home/programs/games
     ../../home/programs/starship
-    ../../home/programs/zsh
 
     # Scripts
     ../../home/scripts # All scripts
 
     # System (Desktop environment like stuff)
-    # ../../home/system/gtk
     ../../home/system/zathura
-    ../../home/system/udiskie
 
     # niri + noctalia own the compositor/shell surface (bar, notifications,
     # launcher, wallpaper, lock, power menu) -- see home/system/niri.
@@ -37,8 +33,8 @@
       proton-pass
       protonmail-desktop
       vlc
-      firefox
-      vscode
+      brave
+      sublime4
 
       # Dev
       nixd
