@@ -14,8 +14,8 @@
     extraLocale = "en_US.UTF-8";
 
     git = {
-      username = "angerZen";
-      email = "67027795+angerZen@users.noreply.github.com";
+      username = "ireZen";
+      email = "297648004+ireZen@users.noreply.github.com";
     };
 
     autoUpgrade = false;
