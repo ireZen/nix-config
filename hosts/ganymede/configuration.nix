@@ -30,6 +30,13 @@
   # home/system/niri, imported via home.nix.
   programs.niri.enable = true;
 
+  nixpkgs.config = {
+    permittedInsecurePackages = [
+      "openssl-1.1.1w"
+      ];
+      problems.handlers.sublimetext4.broken = "warn";
+  };
+
   programs.coolercontrol = {
     enable = true;
     nvidiaSupport = true;
