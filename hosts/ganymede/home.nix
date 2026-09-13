@@ -13,6 +13,7 @@
     ../../home/programs/discord
     ../../home/programs/games
     ../../home/programs/starship
+    ../../home/programs/vscode
 
     # Scripts
     ../../home/scripts # All scripts
@@ -54,9 +55,15 @@
     ];
 
     # Import wallpapers into $HOME/wallpapers
-    file."Pictures/wallpapers" = {
-      recursive = true;
-      source = ../../home/wallpapers;
+    file = {
+      "Pictures/wallpapers" = {
+        recursive = true;
+        source = ../../home/wallpapers;
+      };
+      ".config/niri/" = {
+        recursive = true;
+        source = ../../home/system/niri;
+      };
     };
 
     # Don't touch this

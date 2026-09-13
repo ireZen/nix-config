@@ -49,5 +49,6 @@
     keymapp
     ncdu
     zulip
+    easyeffects
   ];
 }
