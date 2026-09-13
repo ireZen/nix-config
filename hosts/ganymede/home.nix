@@ -8,7 +8,7 @@
 
     # Programs
     ../../home/programs/btop
-    ../../home/programs/alacritty
+    ../../home/programs/kitty
     ../../home/programs/git
     ../../home/programs/discord
     ../../home/programs/games
