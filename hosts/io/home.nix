@@ -11,6 +11,7 @@
     ../../home/programs/alacritty
     ../../home/programs/git
     ../../home/programs/discord
+    ../../home/programs/fastfetch
     # ../../home/programs/games
 
     # Scripts

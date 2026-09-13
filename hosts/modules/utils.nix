@@ -48,5 +48,6 @@
     gparted
     keymapp
     ncdu
+    zulip
   ];
 }

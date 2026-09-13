@@ -5,7 +5,6 @@
     protonup-qt
     protontricks
     wine
-    obs-studio
     gamescope
   ];
 }

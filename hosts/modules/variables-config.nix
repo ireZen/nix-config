@@ -7,12 +7,10 @@
           type = lib.types.str;
           description = "System hostname.";
         };
-
         username = lib.mkOption {
           type = lib.types.str;
           description = "Primary user account name.";
         };
-
         homeDirectory = lib.mkOption {
           type = lib.types.str;
           description = "Absolute path to the user's home directory.";

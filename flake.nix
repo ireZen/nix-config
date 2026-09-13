@@ -71,7 +71,7 @@
           inputs.niri.nixosModules.niri
           inputs.noctalia.nixosModules.default
           inputs.noctalia-greeter.nixosModules.default
-          inputs.nix-citizen.nixosModules
+          # inputs.nix-citizen.nixosModules
         ];
       };
       io = mkHost {

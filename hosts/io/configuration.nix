@@ -1,6 +1,6 @@
 {config, pkgs, ...}: {
   imports = [
-    # ../modules/fonts.nix
+    ../modules/fonts.nix
     ../modules/noctalia-greeter.nix
     ../modules/auto-upgrade.nix
     ../modules/timezone.nix

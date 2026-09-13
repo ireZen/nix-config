@@ -28,7 +28,6 @@
   home = {
     inherit (config.var) username;
     inherit (config.var) homeDirectory;
-
     packages = with pkgs; [
       proton-pass
       protonmail-desktop
