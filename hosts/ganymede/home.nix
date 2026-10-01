@@ -13,7 +13,7 @@
     ../../home/programs/discord
     ../../home/programs/games
     ../../home/programs/starship
-    ../../home/programs/vscode
+    ../../home/programs/vscodium
 
     # Scripts
     ../../home/scripts # All scripts
@@ -34,7 +34,6 @@
       protonmail-desktop
       vlc
       brave
-      sublime4
 
       # Dev
       nixd
@@ -51,7 +50,6 @@
       swappy
       imv
       dconf
-      rocketchat-desktop
     ];
 
     # Import wallpapers into $HOME/wallpapers

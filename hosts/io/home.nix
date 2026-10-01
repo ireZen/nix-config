@@ -39,10 +39,8 @@
       nixd
       alejandra
       nixfmt-rfc-style
-      vscode
 
       # Utils
-      sublime4
       zip
       unzip
       glow
