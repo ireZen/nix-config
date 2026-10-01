@@ -2,5 +2,8 @@
 // https://github.com/YaLTeR/niri/wiki/Configuration:-Miscellaneous#spawn-sh-at-startup
 
 spawn-at-startup "noctalia"
+spawn-at-startup "easyeffects"
+spawn-at-startup "zulip-desktop"
+spawn-at-startup "vesktop"
 spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
 spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
