@@ -2,6 +2,7 @@
   imports = [
     ../modules/fonts.nix
     ../modules/nvidia.nix
+    ../modules/ollama.nix
     ../modules/noctalia-greeter.nix
     ../modules/auto-upgrade.nix
     ../modules/timezone.nix
