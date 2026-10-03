@@ -26,6 +26,7 @@ in {
   # Generic Wayland-compositor utilities (not niri-specific, just no longer
   # pulled in implicitly by a DE now that hyprland/plasma are gone).
   home.packages = with pkgs; [
+    xwayland-satellite
     cliphist
     nautilus
     pamixer
