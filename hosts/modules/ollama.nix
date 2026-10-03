@@ -3,10 +3,8 @@
 
   services.ollama = {
     enable = true;
-    acceleration = "cuda";
-    # Listens on localhost:11434 by default. Uncomment to reach it from
-    # other devices on your LAN:
-    # host = "0.0.0.0";
+    package = pkgs.ollama-cuda;
+    # host = "0.0.0.0"; # uncomment to reach it from other devices on your LAN
   };
 
   # Optional web UI instead of the CLI, served at http://localhost:8080
