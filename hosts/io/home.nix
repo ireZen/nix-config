@@ -53,9 +53,14 @@
     ];
 
     # Import wallpapers into $HOME/wallpapers
-    file."Pictures/wallpapers" = {
-      recursive = true;
-      source = ../../home/wallpapers;
+    file = {
+      "Pictures/wallpapers" = {
+        recursive = true;
+        source = ../../home/wallpapers;
+      };
+      ".config/niri/".source = 
+      config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/Projects/nix-config/home/system/niri";
     };
 
     # Don't touch this
