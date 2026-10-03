@@ -37,13 +37,6 @@
   programs.niri.enable = true;
   programs.niri.package = pkgs.niri;
 
-  nixpkgs.config = {
-    permittedInsecurePackages = [
-      "openssl-1.1.1w"
-      ];
-      problems.handlers.sublimetext4.broken = "warn";
-  };
-
   # Don't touch this
   system.stateVersion = "24.05";
 }
