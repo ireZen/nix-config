@@ -15,7 +15,7 @@
     ../modules/home-manager.nix
     ../modules/utils.nix
     ../modules/steam.nix
-    #../modules/star-citizen.nix
+    ../modules/star-citizen.nix
     ../modules/yubikey.nix
 
     ./hardware-configuration.nix
