@@ -1,1 +1,17 @@
-/nix/store/0cih37zriz5z95x7i9kgaxpchwav36w9-home-manager-files/.config/niri/input.kdl
+input {
+    keyboard {
+        xkb {
+            layout "us"
+            model ""
+            rules ""
+            variant ""
+        }
+        repeat-delay 600
+        repeat-rate 25
+        track-layout "global"
+    }
+    touchpad {
+        tap
+        natural-scroll
+    }
+}

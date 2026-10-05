@@ -1,1 +1,4 @@
-/nix/store/0cih37zriz5z95x7i9kgaxpchwav36w9-home-manager-files/.config/niri/display.kdl
+output "Dell Inc. DELL U4025QW 86FMG34" {
+    scale 1.000000
+    mode "5120x2160@120.000000"
+}
