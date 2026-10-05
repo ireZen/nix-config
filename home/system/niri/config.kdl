@@ -1,7 +1,1 @@
-include "autostart.kdl"
-include "keybinds.kdl"
-include "input.kdl"
-include "display.kdl"
-include "layout.kdl"
-include "rules.kdl"
-include "misc.kdl"
+/nix/store/0cih37zriz5z95x7i9kgaxpchwav36w9-home-manager-files/.config/niri/config.kdl

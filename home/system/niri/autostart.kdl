@@ -1,9 +1,1 @@
-// ────────────── Startup Applications ──────────────
-// https://github.com/YaLTeR/niri/wiki/Configuration:-Miscellaneous#spawn-sh-at-startup
-
-spawn-at-startup "noctalia"
-spawn-at-startup "easyeffects"
-spawn-at-startup "zulip"
-spawn-at-startup "vesktop"
-spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
-spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
+/nix/store/0cih37zriz5z95x7i9kgaxpchwav36w9-home-manager-files/.config/niri/autostart.kdl

@@ -1,9 +1,1 @@
-    window-rule {
-        geometry-corner-radius 6 // Set every window radius to 20
-        clip-to-geometry true
-    }
-
-    layer-rule {
-        match namespace="^noctalia-wallpaper*"
-        place-within-backdrop true
-    }
+/nix/store/0cih37zriz5z95x7i9kgaxpchwav36w9-home-manager-files/.config/niri/rules.kdl
