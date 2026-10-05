@@ -50,6 +50,7 @@
       swappy
       imv
       dconf
+      dnsutils
     ];
 
     # Import wallpapers into $HOME/wallpapers
