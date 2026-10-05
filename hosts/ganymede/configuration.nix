@@ -18,6 +18,7 @@
     ../modules/steam.nix
     ../modules/star-citizen.nix
     ../modules/yubikey.nix
+    ../modules/nix-ld.nix
 
     ./hardware-configuration.nix
     ./variables.nix

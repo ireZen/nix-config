@@ -14,6 +14,7 @@
     ../modules/home-manager.nix
     ../modules/utils.nix
     ../modules/yubikey.nix
+    ../modules/nix-ld.nix
 
     ./hardware-configuration.nix
     ./variables.nix
