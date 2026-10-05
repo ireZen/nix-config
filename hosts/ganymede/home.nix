@@ -14,6 +14,7 @@
     ../../home/programs/games
     ../../home/programs/starship
     ../../home/programs/vscodium
+    ../../home/programs/unity
 
     # Scripts
     ../../home/scripts # All scripts
