@@ -40,6 +40,12 @@
       nixd
       alejandra
       nixfmt-rfc-style
+      (with dotnetCorePackages; combinePackages [sdk_8_0 sdk_9_0])
+      python3
+      uv
+      go
+      android-tools
+      unityhub
 
       # Utils
       zip
@@ -63,6 +69,16 @@
       ".config/niri/".source = 
       config.lib.file.mkOutOfStoreSymlink
       "${config.home.homeDirectory}/Projects/nix-config/home/system/niri";
+    };
+
+    programs.gh = {
+      enable = true;
+      settings.git_protocol = "ssh";   # or "https"
+    };
+    
+    home.sessionVariables = {
+      DOTNET_ROOT = "${pkgs.dotnetCorePackages.sdk_8_0}";
+      GOPATH = "$HOME/go";
     };
 
     # Don't touch this
