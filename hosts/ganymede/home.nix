@@ -39,7 +39,7 @@
       # Dev
       nixd
       alejandra
-      nixfmt-rfc-style
+      nixfmt
       (with dotnetCorePackages; combinePackages [sdk_8_0 sdk_9_0])
       python3
       uv

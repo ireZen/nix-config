@@ -38,7 +38,7 @@
       # Dev
       nixd
       alejandra
-      nixfmt-rfc-style
+      nixfmt
 
       # Utils
       zip
