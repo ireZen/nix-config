@@ -45,7 +45,6 @@
       uv
       go
       android-tools
-      unityhub
 
       # Utils
       zip
