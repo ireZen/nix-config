@@ -5,7 +5,8 @@
   '';
 in {
   home.packages = with pkgs; [
-    unityhub          # Hub + Editor FHS wrapper (unfree — your allowUnfreePredicate already covers it)
+    unityhub
+    unity-editor          # Hub + Editor FHS wrapper (unfree — your allowUnfreePredicate already covers it)
   ];
   home.sessionVariables.UNITY_EDITOR = "${unity-editor}/bin/unity-editor";
 }
