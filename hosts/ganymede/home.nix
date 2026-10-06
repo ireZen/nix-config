@@ -70,11 +70,6 @@
       config.lib.file.mkOutOfStoreSymlink
       "${config.home.homeDirectory}/Projects/nix-config/home/system/niri";
     };
-
-    programs.gh = {
-      enable = true;
-      settings.git_protocol = "ssh";   # or "https"
-    };
     
     sessionVariables = {
       DOTNET_ROOT = "${pkgs.dotnetCorePackages.sdk_8_0}";
@@ -83,6 +78,10 @@
 
     # Don't touch this
     stateVersion = "24.05";
+  };
+  programs.gh = {
+    enable = true;
+    settings.git_protocol = "ssh";   # or "https"
   };
   programs.home-manager.enable = true;
 }
