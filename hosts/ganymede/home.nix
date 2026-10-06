@@ -41,7 +41,7 @@
       alejandra
       nixfmt
       (with dotnetCorePackages; combinePackages [sdk_8_0 sdk_9_0])
-      python3
+      (python3.withPackages (ps: with ps; [pyyaml requests]))
       uv
       go
       android-tools
