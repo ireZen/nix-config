@@ -76,7 +76,7 @@
       settings.git_protocol = "ssh";   # or "https"
     };
     
-    home.sessionVariables = {
+    sessionVariables = {
       DOTNET_ROOT = "${pkgs.dotnetCorePackages.sdk_8_0}";
       GOPATH = "$HOME/go";
     };
