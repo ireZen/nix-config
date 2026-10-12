@@ -78,9 +78,12 @@
     # Don't touch this
     stateVersion = "24.05";
   };
-  programs.gh = {
-    enable = true;
-    settings.git_protocol = "ssh";   # or "https"
+  programs = {
+    gh = {
+      enable = true;
+      settings.git_protocol = "ssh";   # or "https"
+    };
+    bash.enable = true;
+    home-manager.enable = true;
   };
-  programs.home-manager.enable = true;
 }

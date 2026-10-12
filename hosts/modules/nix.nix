@@ -3,7 +3,10 @@
   ...
 }: {
   
-  nixpkgs.config.allowUnfreePredicate = _: true;
+  nixpkgs.config = {
+    allowUnfreePredicate = _: true;
+    android_sdk.accept_license = true;
+  };
 
   nix = {
     extraOptions = ''
