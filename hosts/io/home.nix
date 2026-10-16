@@ -12,6 +12,7 @@
     ../../home/programs/git
     ../../home/programs/discord
     ../../home/programs/fastfetch
+    ../../home/programs/vscodium
     # ../../home/programs/games
 
     # Scripts

@@ -17,11 +17,19 @@ binds {
     // Please choose your own file manager.
     MOD+E                               hotkey-overlay-title="File Manager: Nautilus" { spawn "nautilus"; }
 
-    // ─── Audio Controls ───
-    XF86AUDIORAISEVOLUME                allow-when-locked=true { spawn-sh "noctalia msg volume-up"; }
-    XF86AUDIOLOWERVOLUME                allow-when-locked=true { spawn-sh "noctalia msg volume-down"; }
-    XF86AUDIOMUTE                       allow-when-locked=true { spawn-sh "noctalia msg volume-mute"; }
-    XF86AUDIOMICMUTE                    allow-when-locked=true { spawn-sh "noctalia msg mic-mute"; }
+    // ─── Brightness ───
+    XF86MONBRIGHTNESSUP     allow-when-locked=true { spawn-sh "noctalia msg brightness-up"; }
+    XF86MONBRIGHTNESSDOWN   allow-when-locked=true { spawn-sh "noctalia msg brightness-down"; }
+
+    // ─── Media ───
+    XF86AUDIOPLAY           allow-when-locked=true { spawn "playerctl" "play-pause"; }
+    XF86AUDIOPAUSE          allow-when-locked=true { spawn "playerctl" "play-pause"; }
+    XF86AUDIONEXT           allow-when-locked=true { spawn "playerctl" "next"; }
+    XF86AUDIOPREV           allow-when-locked=true { spawn "playerctl" "previous"; }
+
+    // ─── Keyboard backlight (Dell exposes it as a LED class device) ───
+    XF86KBDBRIGHTNESSUP     allow-when-locked=true { spawn "brightnessctl" "-d" "dell::kbd_backlight" "set" "+1"; }
+    XF86KBDBRIGHTNESSDOWN   allow-when-locked=true { spawn "brightnessctl" "-d" "dell::kbd_backlight" "set" "1-"; }
 
     // ─── Window Movement and Focus ───
     MOD+Q                               { close-window; }

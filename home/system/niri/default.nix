@@ -34,6 +34,7 @@ in {
     wlr-randr
     wl-clipboard
     brightnessctl
+    playerctl
   ];
 
   home.pointerCursor = {
