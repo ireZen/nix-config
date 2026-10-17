@@ -76,6 +76,16 @@
           default = "";
           description = "Rule set passed to services.usbguard.rules.";
         };
+
+        sshAuthorizedKeys = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [];
+          description = ''
+            Public keys allowed to SSH in as the primary user (server hosts).
+            While this is empty, password login over SSH stays enabled so a
+            fresh install isn't locked out.
+          '';
+        };
       };
     };
   };

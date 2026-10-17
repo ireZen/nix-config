@@ -82,6 +82,12 @@
           inputs.noctalia-greeter.nixosModules.default
         ];
       };
+
+      # Homelab servers (no desktop modules).
+      # callisto: hypervisor that replaces Proxmox (Home Assistant, Docker, AMP VMs)
+      callisto = mkHost {hostname = "callisto";};
+      # europa: NAS that replaces Unraid (mergerfs + SnapRAID over the existing disks)
+      europa = mkHost {hostname = "europa";};
     };
   };
 }
