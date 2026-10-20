@@ -3,6 +3,11 @@
         clip-to-geometry true
     }
 
+    window-rule {
+        match app-id="^org\\.gnome\\.Nautilus$"
+        open-floating true
+    }
+
     layer-rule {
         match namespace="^noctalia-wallpaper*"
         place-within-backdrop true
