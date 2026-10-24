@@ -28,6 +28,7 @@
   ];
 
   home = {
+    shellAliases.emulator = "QT_QPA_PLATFORM=xcb emulator";
     inherit (config.var) username;
     inherit (config.var) homeDirectory;
     packages = with pkgs; [
