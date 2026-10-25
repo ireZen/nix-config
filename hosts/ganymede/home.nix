@@ -15,6 +15,7 @@
     ../../home/programs/starship
     ../../home/programs/vscodium
     ../../home/programs/unity
+    ../../home/programs/claude
 
     # Scripts
     ../../home/scripts # All scripts
