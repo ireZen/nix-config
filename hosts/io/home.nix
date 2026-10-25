@@ -60,9 +60,14 @@
         recursive = true;
         source = ../../home/wallpapers;
       };
-      ".config/niri/".source = 
+
+      ".config/niri".source =
       config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/Projects/nix-config/home/system/niri";
+      "${config.home.homeDirectory}/Projects/nix-config/home/system/niri/common";
+
+      ".config/niri-host".source =
+      config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/Projects/nix-config/home/system/niri/hosts/${config.var.hostname}";
     };
 
     # Don't touch this

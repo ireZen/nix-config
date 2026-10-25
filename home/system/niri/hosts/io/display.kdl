@@ -1,0 +1,4 @@
+output "Sharp Corporation 0x14D7 Unknown" {
+    scale 1.0
+    mode "1920x1200@59.950"
+}
