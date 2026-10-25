@@ -23,6 +23,8 @@ Do Part A first. Unraid stays untouched during Part A, so it can hold the VM ima
 
 ## Part A: Proxmox → callisto
 
+callisto runs [Incus](https://linuxcontainers.org/incus/). The VMs are declared under `homelab.incusVMs` in `hosts/callisto/configuration.nix`, and each one is created once from its old disk image with `incus-vm-import`.
+
 ### A1. Record each VM's settings
 
 On the Proxmox host, run this for each VM:
@@ -32,33 +34,36 @@ qm list
 qm config <vmid>
 ```
 
-Copy the following values into `hosts/callisto/vms/<name>.xml`:
+Copy the following values into that VM's entry in `hosts/callisto/configuration.nix`:
 
-| `qm config` line | XML |
+| `qm config` line | `homelab.incusVMs.<name>` |
 |---|---|
-| `memory: 4096` | `<memory unit='MiB'>4096</memory>` |
-| `cores: 2` (× sockets) | `<vcpu>2</vcpu>` |
-| `net0: virtio=BC:24:11:AA:BB:CC,bridge=vmbr0` | `<mac address='BC:24:11:AA:BB:CC'/>`, the same MAC, so DHCP reservations and IPs stay the same |
-| `bios: ovmf` | `<os firmware='efi'>` (haos.xml already has it) |
-| no `bios` line | SeaBIOS; leave docker.xml/amp.xml as they are |
-| `machine: q35` | `machine='q35'`, and delete the NIC's `<address …/>` line |
-| `usb0: host=10c4:ea60` | uncomment the `<hostdev>` block in haos.xml with those IDs |
-| `scsi0: local-lvm:vm-101-disk-1,…` | the disk you export in A3 |
+| `memory: 4096` | `memory = "4GiB";` |
+| `cores: 2` (× sockets) | `cpus = 2;` |
+| `net0: virtio=BC:24:11:AA:BB:CC,bridge=vmbr0` | `mac = "bc:24:11:aa:bb:cc";`, the same MAC, so DHCP reservations and IPs stay the same |
+| `bios: ovmf` | `legacyBios = false;` (always the case for HAOS) |
+| no `bios` line (SeaBIOS) | `legacyBios = true;` |
+| `scsi0: …,size=64G` | `diskSize = "64GiB";`, at least the Proxmox disk size |
+| `usb0: host=10c4:ea60` | `usb.zigbee = { vendorid = "10c4"; productid = "ea60"; };` |
 
-### A2. Prepare the Linux guests (Docker, AMP)
+### A2. Prepare the Linux guests (Docker, AMP). This step is required.
 
-On each guest, run `ip -br link`. Proxmox guests usually call the NIC `ens18`. The Docker and AMP templates keep the NIC in the same PCI slot, so the name should not change. To be safe, make the guest match its network config by MAC instead of by name. On Ubuntu, in `/etc/netplan/*.yaml`:
+Incus lays out the virtual hardware differently from Proxmox, so the guest's network card will get a new name, such as `enp5s0` instead of `ens18`. A guest whose network config names `ens18` would come up with no network. Before shutting each guest down, make its config match the card by MAC instead. On Ubuntu, in `/etc/netplan/*.yaml`:
 
 ```yaml
-ethernets:
-  lan:
-    match:
-      macaddress: bc:24:11:aa:bb:cc
-    set-name: ens18
-    dhcp4: true
+network:
+  version: 2
+  ethernets:
+    lan:
+      match:
+        macaddress: bc:24:11:aa:bb:cc
+      set-name: lan0
+      dhcp4: true
 ```
 
-Optionally install the guest agent (`apt install qemu-guest-agent`), which makes host shutdowns cleaner.
+Run `sudo netplan try` to check it. Use the same MAC that you put in `mac = …`. Home Assistant OS needs no changes.
+
+The disks still show up as `/dev/sda`, because Incus uses the same VirtIO SCSI controller as Proxmox.
 
 ### A3. Export the disks
 
@@ -71,18 +76,19 @@ qm shutdown <vmid>
 pvesm path local-lvm:vm-<vmid>-disk-1          # prints /dev/pve/vm-... (or /dev/zvol/...)
 qemu-img convert -p -O qcow2 "$(pvesm path local-lvm:vm-<vmid>-disk-1)" /mnt/nas/haos.qcow2
 qemu-img check /mnt/nas/haos.qcow2
+qemu-img info /mnt/nas/haos.qcow2             # "virtual size" must fit in diskSize
 ```
 
-- Export only the main disk (`scsi0`, `virtio0` or `sata0`). Skip `efidisk0`; libvirt makes its own.
-- Name the files `haos.qcow2`, `docker.qcow2` and `amp.qcow2`, to match the XML.
-- If a VM has more than one data disk, export each one and add a `<disk>` block for it (`target dev='sdb'`, and so on).
+- Export only the main disk (`scsi0`, `virtio0` or `sata0`). Skip `efidisk0`; Incus makes its own.
+- Name the files `haos.qcow2`, `docker.qcow2` and `amp.qcow2`.
+- If a VM has a second data disk, export it too. After the import, attach it as an Incus custom volume.
 - If you can, put a second copy somewhere other than Unraid. Until Part A is finished, these images are your only copy of the VMs.
 
 ### A4. Fill in the config
 
 - `hosts/callisto/network.nix`: NIC name, plus the Proxmox host's current IP, gateway and DNS.
 - `hosts/callisto/variables.nix`: your SSH public key(s).
-- The VM XMLs, from A1.
+- `homelab.incusVMs` in `hosts/callisto/configuration.nix`, from A1.
 
 Commit and push.
 
@@ -114,18 +120,28 @@ reboot
 
 Afterwards, commit the real `hardware-configuration.nix` from the server and push it.
 
-If the old Proxmox box had a separate disk for VM storage, add a `fileSystems."/var/lib/libvirt/images"` entry for it instead of keeping the images on the root disk.
+If the old Proxmox box had a separate disk for VM storage, mount it at `/var/lib/incus/storage-pools/default` (a `fileSystems` entry in the host config) **before** the first boot. Otherwise the VMs live on the root disk.
 
-### A6. Bring the VMs back
+### A6. Import the VMs
 
 ```bash
 sudo mkdir -p /mnt/nas && sudo mount -t nfs <unraid-ip>:/mnt/user/backups /mnt/nas
-sudo rsync -avP /mnt/nas/{haos,docker,amp}.qcow2 /var/lib/libvirt/images/
-sudo systemctl restart libvirt-define-guests   # defines and starts all three VMs
-virsh -c qemu:///system list --all
+
+sudo incus-vm-import haos   /mnt/nas/haos.qcow2
+sudo incus-vm-import docker /mnt/nas/docker.qcow2
+sudo incus-vm-import amp    /mnt/nas/amp.qcow2
+
+incus start haos docker amp
+incus list
 ```
 
-To watch the VMs from your desktop, use `virt-manager -c qemu+ssh://angerzen@callisto/system`. You can also open a serial console on callisto with `virsh console docker`.
+`incus-vm-import` creates each VM from its declaration and copies the image into the VM's disk. It refuses to touch a VM that already exists, and it stops if the image is bigger than `diskSize`.
+
+From then on, the VMs start automatically with the host (Home Assistant first) and shut down cleanly with it. To watch one boot, run `incus console haos --type=vga` on callisto, or use the web UI.
+
+**Web UI:** open `https://callisto:8443` (or its IP) and accept the self-signed certificate. The UI walks you through creating a browser certificate; trust it on callisto with `incus config trust add-certificate <file>`.
+
+**Changing a VM later:** rebuilding doesn't modify VMs that already exist. Change them with `incus config set <vm> limits.memory=8GiB` (or in the UI), then update `homelab.incusVMs` to match, so the repo records what's running.
 
 ### A7. Check
 
@@ -135,8 +151,10 @@ To watch the VMs from your desktop, use `virt-manager -c qemu+ssh://angerzen@cal
 
 **Troubleshooting**
 
-- *No network in a guest:* the interface was renamed. Fix netplan as in A2 over `virsh console`.
+- *No network in a guest:* the guest is still matching `ens18`. Fix netplan as in A2 from `incus console <vm>`.
+- *A legacy-BIOS guest won't boot:* check that `security.csm` is true with `incus config get <vm> security.csm`.
 - *A UEFI Linux guest drops to the firmware shell:* its boot entry was in Proxmox's EFI disk. In the shell, run `FS0:\EFI\ubuntu\shimx64.efi` (or `grubx64.efi`). Once the guest has booted, run `sudo grub-install --removable` (or reinstall shim) so it boots without that entry.
+- *Want to redo an import:* `incus delete <vm>`, then run `incus-vm-import` again.
 
 **Rollback:** reinstall Proxmox, then `qemu-img convert` the qcow2 files back into VM disks.
 
