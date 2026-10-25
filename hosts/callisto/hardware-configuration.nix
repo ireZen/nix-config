@@ -5,8 +5,9 @@
 {modulesPath, ...}: {
   imports = [(modulesPath + "/installer/scan/not-detected.nix")];
 
-  boot.initrd.availableKernelModules = ["ahci" "xhci_pci" "nvme" "usbhid" "usb_storage" "sd_mod"];
-  boot.kernelModules = ["kvm-intel" "kvm-amd"];
+  # Dell T440: the boot SSD sits behind the PERC (LSI MegaRAID SAS-3 3108).
+  boot.initrd.availableKernelModules = ["ahci" "xhci_pci" "megaraid_sas" "usbhid" "usb_storage" "sd_mod"];
+  boot.kernelModules = ["kvm-intel"];
 
   fileSystems."/" = {
     device = "/dev/disk/by-label/nixos";

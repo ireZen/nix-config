@@ -2,10 +2,10 @@
 
 This runbook goes with the `callisto` and `europa` hosts in this flake.
 
-- **Part A** replaces Proxmox. The Home Assistant, Docker and AMP VMs move over as disk images.
+- **Part A** replaces Proxmox. The Home Assistant, Docker and AMP VMs are copied from their Proxmox disks into Incus VMs on the same ZFS pool.
 - **Part B** replaces Unraid. The data disks are kept untouched, mergerfs pools them at `/mnt/user`, and SnapRAID takes over parity.
 
-Do Part A first. Unraid stays untouched during Part A, so it can hold the VM images while the hypervisor is reinstalled. Every value you need to fill in is marked `CHANGE ME` in the config.
+The two parts are independent. Do Part A first, so the hypervisor is settled before the NAS changes. Every value you still need to fill in is marked `CHANGE ME` in the config.
 
 ---
 
@@ -23,87 +23,93 @@ Do Part A first. Unraid stays untouched during Part A, so it can hold the VM ima
 
 ## Part A: Proxmox → callisto
 
-callisto runs [Incus](https://linuxcontainers.org/incus/). The VMs are declared under `homelab.incusVMs` in `hosts/callisto/configuration.nix`, and each one is created once from its old disk image with `incus-vm-import`.
+callisto is the Dell PowerEdge T440 that runs Proxmox today as `pve` (10.0.0.16). It runs [Incus](https://linuxcontainers.org/incus/) instead, and `hosts/callisto/` is already filled in from the Proxmox config export of 2026-10-25:
 
-### A1. Record each VM's settings
+| | Proxmox | callisto |
+|---|---|---|
+| Boot disk | `sda`, Samsung PM863 480 GB, serial **S3BUNX0K804302**, LVM | the same disk, wiped and reinstalled |
+| VM storage | ZFS pool `ZedPool` | the same pool, untouched; Incus VMs go in `ZedPool/incus` |
+| Network | `vmbr0` on `nic0` (X710 port 1), 10.0.0.16/22 | `br0` on the same port, with the same IP and MAC |
+| Home Assistant | VM 100: 2 vCPU, 4 GiB, OVMF, CH340 USB adapter | `haos`, with the same settings and the same MAC |
+| AMP | VM 101: 16 vCPU, 32 GiB, SeaBIOS | `amp`, with the same settings and the same MAC |
+| Docker | VM 102: 16 vCPU, 32 GiB, OVMF, Quadro P4000 passthrough | `docker`, with the same settings, the same MAC and the same GPU |
 
-On the Proxmox host, run this for each VM:
+The VM disks never leave the machine. NixOS goes on the boot disk only. `ZedPool` is imported as it is, and `incus-vm-import` copies each Proxmox disk into a new Incus VM on the same pool. The Proxmox disks stay where they are until you delete them, so a rollback is always possible.
 
-```bash
-qm list
-qm config <vmid>
-```
+### A1. Prepare the Docker and AMP guests. This step is required.
 
-Copy the following values into that VM's entry in `hosts/callisto/configuration.nix`:
+Incus lays out the virtual hardware differently from Proxmox, so each guest's network card gets a new name (for example `enp5s0` instead of `ens18`). A guest whose network config names `ens18` comes up with no network. While each guest still runs on Proxmox, change its network config to match the card by MAC address instead of by name:
 
-| `qm config` line | `homelab.incusVMs.<name>` |
-|---|---|
-| `memory: 4096` | `memory = "4GiB";` |
-| `cores: 2` (× sockets) | `cpus = 2;` |
-| `net0: virtio=BC:24:11:AA:BB:CC,bridge=vmbr0` | `mac = "bc:24:11:aa:bb:cc";`, the same MAC, so DHCP reservations and IPs stay the same |
-| `bios: ovmf` | `legacyBios = false;` (always the case for HAOS) |
-| no `bios` line (SeaBIOS) | `legacyBios = true;` |
-| `scsi0: …,size=64G` | `diskSize = "64GiB";`, at least the Proxmox disk size |
-| `usb0: host=10c4:ea60` | `usb.zigbee = { vendorid = "10c4"; productid = "ea60"; };` |
+- **Docker VM:** MAC `bc:24:11:33:84:06`
+- **AMP VM:** MAC `bc:24:11:38:67:42`
 
-### A2. Prepare the Linux guests (Docker, AMP). This step is required.
+How you do that depends on the guest's distribution:
 
-Incus lays out the virtual hardware differently from Proxmox, so the guest's network card will get a new name, such as `enp5s0` instead of `ens18`. A guest whose network config names `ens18` would come up with no network. Before shutting each guest down, make its config match the card by MAC instead. On Ubuntu, in `/etc/netplan/*.yaml`:
-
-```yaml
-network:
-  version: 2
+- **netplan (Ubuntu):** in `/etc/netplan/*.yaml`, replace the `ens18:` block with:
+  ```yaml
   ethernets:
     lan:
       match:
-        macaddress: bc:24:11:aa:bb:cc
+        macaddress: bc:24:11:33:84:06
       set-name: lan0
       dhcp4: true
-```
+  ```
+  Then run `sudo netplan try`.
+- **NetworkManager (Fedora and others):** `nmcli connection modify "<connection>" connection.interface-name "" 802-3-ethernet.mac-address bc:24:11:33:84:06`
+- **NixOS guest:** if it sets `networking.interfaces.ens18`, switch to `systemd.network` with `matchConfig.MACAddress`.
 
-Run `sudo netplan try` to check it. Use the same MAC that you put in `mac = …`. Home Assistant OS needs no changes.
+Home Assistant OS needs no changes.
 
-The disks still show up as `/dev/sda`, because Incus uses the same VirtIO SCSI controller as Proxmox.
+### A2. Save what lives only on the boot disk
 
-### A3. Export the disks
-
-Shut each VM down cleanly, then copy its disk to Unraid as qcow2:
+Everything on `sda` is erased. On the Proxmox host:
 
 ```bash
-mkdir -p /mnt/nas && mount -t nfs <unraid-ip>:/mnt/user/backups /mnt/nas
-qm shutdown <vmid>
-
-pvesm path local-lvm:vm-<vmid>-disk-1          # prints /dev/pve/vm-... (or /dev/zvol/...)
-qemu-img convert -p -O qcow2 "$(pvesm path local-lvm:vm-<vmid>-disk-1)" /mnt/nas/haos.qcow2
-qemu-img check /mnt/nas/haos.qcow2
-qemu-img info /mnt/nas/haos.qcow2             # "virtual size" must fit in diskSize
+ls /var/lib/vz/template/iso /var/lib/vz/dump   # ISOs and backups on "local"; copy off anything you want to keep
+mkdir -p /root/pve-backup && cp /etc/pve/qemu-server/*.conf /root/pve-backup/
 ```
 
-- Export only the main disk (`scsi0`, `virtio0` or `sata0`). Skip `efidisk0`; Incus makes its own.
-- Name the files `haos.qcow2`, `docker.qcow2` and `amp.qcow2`.
-- If a VM has a second data disk, export it too. After the import, attach it as an Incus custom volume.
-- If you can, put a second copy somewhere other than Unraid. Until Part A is finished, these images are your only copy of the VMs.
+Copy `/root/pve-backup/` to your desktop with `scp -r root@10.0.0.16:/root/pve-backup .`. Those three files are your Proxmox rollback.
 
-### A4. Fill in the config
+### A3. Stop the VMs and release the pool
 
-- `hosts/callisto/network.nix`: NIC name, plus the Proxmox host's current IP, gateway and DNS.
+```bash
+qm shutdown 100 && qm shutdown 101 && qm shutdown 102
+qm list                     # all three "stopped"
+zpool export ZedPool        # hand the pool over cleanly
+```
+
+Exporting means NixOS can import the pool on first boot without forcing it.
+
+### A4. Fill in what's left
+
 - `hosts/callisto/variables.nix`: your SSH public key(s).
-- `homelab.incusVMs` in `hosts/callisto/configuration.nix`, from A1.
 
-Commit and push.
+Everything else in `hosts/callisto/` already matches the export. Commit and push.
 
-### A5. Install NixOS (this wipes the Proxmox boot disk)
+### A5. Install NixOS on the boot disk only
 
-Boot the NixOS minimal ISO. Identify the disk with `lsblk -o NAME,SIZE,MODEL,SERIAL`, then partition it:
+Three of the ZFS disks are the **same model** as the boot disk (Samsung MZ7KM480). Use the boot disk's serial number, never `/dev/sdX`.
+
+Boot the NixOS minimal ISO, then confirm that this disk is the one holding Proxmox's LVM:
 
 ```bash
-DISK=/dev/nvme0n1          # CHANGE ME (triple-check)
-parted $DISK -- mklabel gpt
-parted $DISK -- mkpart ESP fat32 1MiB 1GiB
-parted $DISK -- set 1 esp on
-parted $DISK -- mkpart root ext4 1GiB 100%
-mkfs.fat -F 32 -n BOOT ${DISK}p1        # use ${DISK}1 for /dev/sdX
-mkfs.ext4 -L nixos ${DISK}p2
+lsblk -o NAME,SIZE,FSTYPE,MODEL,SERIAL     # the S3BUNX0K804302 disk shows LVM2_member partitions
+DISK=/dev/disk/by-id/ata-MZ7KM480HMHQ0D3_S3BUNX0K804302
+ls -l $DISK                                # if this doesn't exist, check `ls /dev/disk/by-id | grep S3BUNX0K804302`
+```
+
+Then wipe and partition that disk:
+
+```bash
+vgchange -an pve                           # release Proxmox's LVM so the disk can be wiped
+wipefs -a ${DISK}-part3 ${DISK}-part2 $DISK
+parted -s $DISK -- mklabel gpt \
+  mkpart ESP fat32 1MiB 1GiB set 1 esp on \
+  mkpart root ext4 1GiB 100%
+udevadm settle
+mkfs.fat -F 32 -n BOOT ${DISK}-part1
+mkfs.ext4 -L nixos ${DISK}-part2
 mount /dev/disk/by-label/nixos /mnt
 mount --mkdir -o umask=077 /dev/disk/by-label/BOOT /mnt/boot
 
@@ -120,43 +126,65 @@ reboot
 
 Afterwards, commit the real `hardware-configuration.nix` from the server and push it.
 
-If the old Proxmox box had a separate disk for VM storage, mount it at `/var/lib/incus/storage-pools/default` (a `fileSystems` entry in the host config) **before** the first boot. Otherwise the VMs live on the root disk.
+### A6. First boot checks
 
-### A6. Import the VMs
+SSH in with `ssh angerzen@10.0.0.16`, then run:
 
 ```bash
-sudo mkdir -p /mnt/nas && sudo mount -t nfs <unraid-ip>:/mnt/user/backups /mnt/nas
+zpool status ZedPool                         # ONLINE, all 10 disks
+zfs list -r ZedPool                          # old vm-10x disks, plus a new empty ZedPool/incus
+ip -br addr show br0                         # 10.0.0.16/22
+lspci -nnk -s af:00                          # "Kernel driver in use: vfio-pci" on both functions
+incus storage list                           # "default", zfs, ZedPool/incus
+```
 
-sudo incus-vm-import haos   /mnt/nas/haos.qcow2
-sudo incus-vm-import docker /mnt/nas/docker.qcow2
-sudo incus-vm-import amp    /mnt/nas/amp.qcow2
+If `ZedPool` isn't imported (because the export in A3 was skipped), import it once by hand with `sudo zpool import -f ZedPool`, then run `sudo systemctl restart incus`.
+
+### A7. Import the VMs
+
+Each command creates the VM with the settings from `hosts/callisto/configuration.nix`, then copies the Proxmox disk into it. The copy stays on the same pool, so it takes minutes, not hours.
+
+```bash
+sudo incus-vm-import haos   /dev/zvol/ZedPool/vm-100-disk-0
+sudo incus-vm-import amp    /dev/zvol/ZedPool/vm-101-disk-0
+sudo incus-vm-import docker /dev/zvol/ZedPool/vm-102-disk-1   # disk-1! disk-0 is only Proxmox's EFI vars
 
 incus start haos docker amp
 incus list
 ```
 
-`incus-vm-import` creates each VM from its declaration and copies the image into the VM's disk. It refuses to touch a VM that already exists, and it stops if the image is bigger than `diskSize`.
+`incus-vm-import` refuses to touch a VM that already exists, and it stops if the old disk is bigger than the new one.
 
-From then on, the VMs start automatically with the host (Home Assistant first) and shut down cleanly with it. To watch one boot, run `incus console haos --type=vga` on callisto, or use the web UI.
+From now on, the VMs start automatically with the host (Home Assistant first) and shut down cleanly with it. To watch one boot, run `incus console haos --type=vga`, or use the web UI.
 
-**Web UI:** open `https://callisto:8443` (or its IP) and accept the self-signed certificate. The UI walks you through creating a browser certificate; trust it on callisto with `incus config trust add-certificate <file>`.
+**Web UI:** open `https://10.0.0.16:8443` and accept the self-signed certificate. The UI walks you through creating a browser certificate; trust it on callisto with `incus config trust add-certificate <file>`.
 
 **Changing a VM later:** rebuilding doesn't modify VMs that already exist. Change them with `incus config set <vm> limits.memory=8GiB` (or in the UI), then update `homelab.incusVMs` to match, so the repo records what's running.
 
-### A7. Check
+### A8. Check
 
-- Home Assistant opens at its old IP, and its USB radios work (Settings → System → Hardware).
-- The Docker VM has its IP, its NAS mounts work, and its containers are up.
+- Home Assistant opens at its old address, and the device on the CH340 adapter works (Settings → System → Hardware).
+- The Docker VM has its old IP, `nvidia-smi` inside it shows the Quadro P4000, and its containers are up.
 - AMP's panel works and players can join.
 
 **Troubleshooting**
 
-- *No network in a guest:* the guest is still matching `ens18`. Fix netplan as in A2 from `incus console <vm>`.
-- *A legacy-BIOS guest won't boot:* check that `security.csm` is true with `incus config get <vm> security.csm`.
-- *A UEFI Linux guest drops to the firmware shell:* its boot entry was in Proxmox's EFI disk. In the shell, run `FS0:\EFI\ubuntu\shimx64.efi` (or `grubx64.efi`). Once the guest has booted, run `sudo grub-install --removable` (or reinstall shim) so it boots without that entry.
-- *Want to redo an import:* `incus delete <vm>`, then run `incus-vm-import` again.
+- *No network in a guest:* the guest still matches `ens18`. Fix it as in A1 from `incus console <vm>`.
+- *Docker VM drops to the UEFI shell:* its boot entry lived in Proxmox's EFI vars disk (`vm-102-disk-0`). In the shell, run `FS0:\EFI\<distro>\shimx64.efi` (or `grubx64.efi`; `ls FS0:\EFI` shows the name). Once it has booted, install the bootloader to the fallback path so it no longer needs that entry: `sudo grub-install --removable` on GRUB systems, or `sudo bootctl install` on systemd-boot.
+- *AMP doesn't boot:* check that it uses legacy BIOS with `incus config get amp security.csm` (should be `true`).
+- *Docker VM won't start because of the GPU:* run `incus info docker --show-log` and `sudo dmesg | grep -i -e vfio -e iommu`. Both card functions must use `vfio-pci` (see A6).
+- *Want to redo an import:* `incus delete <vm>`, then run `incus-vm-import` again. The Proxmox disk is never modified.
 
-**Rollback:** reinstall Proxmox, then `qemu-img convert` the qcow2 files back into VM disks.
+### A9. Clean up, once everything has run well for a while
+
+```bash
+sudo zfs destroy ZedPool/vm-100-disk-0
+sudo zfs destroy ZedPool/vm-101-disk-0
+sudo zfs destroy ZedPool/vm-102-disk-0
+sudo zfs destroy ZedPool/vm-102-disk-1
+```
+
+Until you run these, a rollback is possible: reinstall Proxmox on the boot disk, run `zpool import -f ZedPool`, copy the saved `.conf` files back into `/etc/pve/qemu-server/`, and start the VMs.
 
 ---
 
