@@ -9,7 +9,7 @@
 
   # Optional web UI instead of the CLI, served at http://localhost:8080
   services.open-webui = {
-    enable = true;
+    enable = false;
     port = 8080;
   };
 }
