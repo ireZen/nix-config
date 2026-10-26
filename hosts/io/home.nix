@@ -13,6 +13,7 @@
     ../../home/programs/discord
     ../../home/programs/fastfetch
     ../../home/programs/vscodium
+    ../../home/programs/claude
     # ../../home/programs/games
 
     # Scripts
