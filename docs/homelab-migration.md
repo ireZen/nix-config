@@ -38,27 +38,45 @@ The VM disks never leave the machine. NixOS goes on the boot disk only. `ZedPool
 
 ### A1. Prepare the Docker and AMP guests. This step is required.
 
-Incus lays out the virtual hardware differently from Proxmox, so each guest's network card gets a new name (for example `enp5s0` instead of `ens18`). A guest whose network config names `ens18` comes up with no network. While each guest still runs on Proxmox, change its network config to match the card by MAC address instead of by name:
+Both guests run Arch Linux. Do the two steps below in each one while it still runs on Proxmox. Home Assistant OS needs no changes.
+
+#### Network: match the card by MAC address
+
+Incus lays out the virtual hardware differently from Proxmox, so each guest's network card gets a new name (for example `enp5s0` instead of `ens18`). A guest whose network config names `ens18` comes up with no network. Change it to match the card by MAC address instead:
 
 - **Docker VM:** MAC `bc:24:11:33:84:06`
 - **AMP VM:** MAC `bc:24:11:38:67:42`
 
-How you do that depends on the guest's distribution:
+First find out which network manager the guest uses:
 
-- **netplan (Ubuntu):** in `/etc/netplan/*.yaml`, replace the `ens18:` block with:
-  ```yaml
-  ethernets:
-    lan:
-      match:
-        macaddress: bc:24:11:33:84:06
-      set-name: lan0
-      dhcp4: true
+```bash
+systemctl list-unit-files --state=enabled | grep -e networkd -e NetworkManager -e dhcpcd -e netctl
+grep -rl ens18 /etc/systemd/network /etc/NetworkManager /etc/netctl /etc/dhcpcd.conf 2>/dev/null
+```
+
+Then fix whichever one it is (the examples use the Docker VM's MAC):
+
+- **systemd-networkd:** in the `/etc/systemd/network/*.network` file, replace `Name=ens18` in the `[Match]` section with:
+  ```ini
+  [Match]
+  MACAddress=bc:24:11:33:84:06
   ```
-  Then run `sudo netplan try`.
-- **NetworkManager (Fedora and others):** `nmcli connection modify "<connection>" connection.interface-name "" 802-3-ethernet.mac-address bc:24:11:33:84:06`
-- **NixOS guest:** if it sets `networking.interfaces.ens18`, switch to `systemd.network` with `matchConfig.MACAddress`.
+  Then run `sudo networkctl reload` and check that `networkctl status` still shows the address.
+- **NetworkManager:** `sudo nmcli connection modify "<connection>" connection.interface-name "" 802-3-ethernet.mac-address bc:24:11:33:84:06`
+- **dhcpcd:** if `dhcpcd@ens18.service` is enabled, run `sudo systemctl enable --now dhcpcd.service && sudo systemctl disable dhcpcd@ens18.service`. Plain `dhcpcd.service` handles every interface. Also remove any `interface ens18` line from `/etc/dhcpcd.conf`.
+- **netctl:** netctl profiles always name an interface, so move the guest to systemd-networkd. Create `/etc/systemd/network/20-lan.network` with the `[Match]` section above plus `[Network]` and `DHCP=yes` (or the static `Address=`/`Gateway=`/`DNS=` from the netctl profile). Then run `sudo netctl disable <profile> && sudo systemctl enable --now systemd-networkd systemd-resolved`.
 
-Home Assistant OS needs no changes.
+#### Initramfs: include the virtio drivers
+
+mkinitcpio's `autodetect` hook only puts the drivers the guest uses right now into the initramfs. If the Proxmox disk controller is something other than the virtio-scsi controller that Incus uses, the guest can't find its root disk after the move. Add the drivers explicitly. In `/etc/mkinitcpio.conf`:
+
+```bash
+MODULES=(virtio_pci virtio_scsi virtio_blk)
+```
+
+Keep any modules already on that line (`nvidia …` on the Docker VM, for example). Then run `sudo mkinitcpio -P`.
+
+Don't run `pacman -Syu` in the guests between now and A7, so that nothing changes underneath the migration.
 
 ### A2. Save what lives only on the boot disk
 
@@ -169,8 +187,11 @@ From now on, the VMs start automatically with the host (Home Assistant first) an
 
 **Troubleshooting**
 
-- *No network in a guest:* the guest still matches `ens18`. Fix it as in A1 from `incus console <vm>`.
-- *Docker VM drops to the UEFI shell:* its boot entry lived in Proxmox's EFI vars disk (`vm-102-disk-0`). In the shell, run `FS0:\EFI\<distro>\shimx64.efi` (or `grubx64.efi`; `ls FS0:\EFI` shows the name). Once it has booted, install the bootloader to the fallback path so it no longer needs that entry: `sudo grub-install --removable` on GRUB systems, or `sudo bootctl install` on systemd-boot.
+- *No network in a guest:* the guest still matches `ens18`. Fix it as in A1 from `incus console <vm>`. `ip -br link` shows the new name of the card.
+- *Docker VM drops to the UEFI shell:* its boot entry lived in Proxmox's EFI vars disk (`vm-102-disk-0`). Arch doesn't use shim, so start the bootloader directly. In the shell, run `FS0:\EFI\GRUB\grubx64.efi` for GRUB or `FS0:\EFI\systemd\systemd-bootx64.efi` for systemd-boot (`ls FS0:\EFI` shows which one is there). Once it has booted, install the bootloader to the fallback path `\EFI\BOOT\BOOTX64.EFI` so it no longer needs that entry:
+  - GRUB: `sudo grub-install --target=x86_64-efi --efi-directory=/boot --removable`. Use `/efi` or `/boot/efi` instead if that's where the ESP is mounted (`findmnt -t vfat`).
+  - systemd-boot: `sudo bootctl install`. It already writes the fallback path.
+- *Arch guest stops at "waiting for root device" or drops to an emergency shell:* the initramfs is missing the virtio drivers (see A1). Pick the `fallback` initramfs entry in the boot menu, which has every driver. Then add the modules to `/etc/mkinitcpio.conf` and run `sudo mkinitcpio -P`.
 - *AMP doesn't boot:* check that it uses legacy BIOS with `incus config get amp security.csm` (should be `true`).
 - *Docker VM won't start because of the GPU:* run `incus info docker --show-log` and `sudo dmesg | grep -i -e vfio -e iommu`. Both card functions must use `vfio-pci` (see A6).
 - *Want to redo an import:* `incus delete <vm>`, then run `incus-vm-import` again. The Proxmox disk is never modified.
