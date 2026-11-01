@@ -30,6 +30,14 @@
     # Optional - updates underlying without waiting for nix-citizen to update
     nix-gaming.url = "github:fufexan/nix-gaming";
     nix-citizen.inputs.nix-gaming.follows = "nix-gaming";
+
+    # Encrypted secrets (committed as encrypted values in secrets/*.yaml).
+    # Each host decrypts with its own /etc/ssh/ssh_host_ed25519_key.
+    # See secrets/README.md and .sops.yaml.
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -56,6 +64,7 @@
             {nixpkgs.overlays = [inputs.nur.overlays.default];}
 
             inputs.home-manager.nixosModules.home-manager
+            inputs.sops-nix.nixosModules.sops
 
             ./hosts/${hostname}/configuration.nix
           ]
