@@ -8,8 +8,8 @@
 # A host can only decrypt a file whose creation_rule lists it. After adding a
 # host here, re-key the files it needs:  sops updatekeys secrets/<file>.yaml
 keys:
-  - &admin    age1REPLACE_ADMIN_PUBKEY
-  - &ganymede age1REPLACE_GANYMEDE_HOST
+  - &admin    age1jcmg5wqk8426vkkkdw4lazuuh7ed82wpqjw53an5pfvh6hefwqxq4nff83
+  - &ganymede age1674jzhd53mkv0t6ggaj0dm3xcgnxjdrjtxmlqshzc4yd5lm4vy3qtf4fz8
   - &io       age1REPLACE_IO_HOST
   - &callisto age1REPLACE_CALLISTO_HOST
   - &europa   age1REPLACE_EUROPA_HOST
@@ -18,7 +18,7 @@ creation_rules:
   # Secrets every host needs (e.g. the user login password).
   - path_regex: secrets/common\.yaml$
     key_groups:
-      - age: [*admin, *ganymede, *io, *callisto, *europa]
+      - age: [*admin, *ganymede]
 
   # europa-only secrets (e.g. the Samba password).
   - path_regex: secrets/europa\.yaml$

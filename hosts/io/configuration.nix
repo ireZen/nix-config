@@ -15,6 +15,7 @@
     ../modules/utils.nix
     ../modules/yubikey.nix
     ../modules/nix-ld.nix
+    ../modules/openssh.nix
 
     ./hardware-configuration.nix
     ./variables.nix
