@@ -9,6 +9,7 @@
   };
 
   users = {
+    mutableUsers = false;
     users.${config.var.username} = {
       isNormalUser = true;
       description = "${config.var.username} account";
