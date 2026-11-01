@@ -1,0 +1,26 @@
+# Recipients for sops-encrypted secrets. See secrets/README.md for the
+# add-a-host / add-a-secret / bootstrap workflow.
+#
+# Replace every age1... placeholder below with a real key:
+#   admin  -> your personal key:  age-keygen -y ~/.config/sops/age/keys.txt
+#   <host> -> that host's key:    ssh-keyscan -t ed25519 <host> | ssh-to-age
+#
+# A host can only decrypt a file whose creation_rule lists it. After adding a
+# host here, re-key the files it needs:  sops updatekeys secrets/<file>.yaml
+keys:
+  - &admin    age1REPLACE_ADMIN_PUBKEY
+  - &ganymede age1REPLACE_GANYMEDE_HOST
+  - &io       age1REPLACE_IO_HOST
+  - &callisto age1REPLACE_CALLISTO_HOST
+  - &europa   age1REPLACE_EUROPA_HOST
+
+creation_rules:
+  # Secrets every host needs (e.g. the user login password).
+  - path_regex: secrets/common\.yaml$
+    key_groups:
+      - age: [*admin, *ganymede, *io, *callisto, *europa]
+
+  # europa-only secrets (e.g. the Samba password).
+  - path_regex: secrets/europa\.yaml$
+    key_groups:
+      - age: [*admin, *europa]

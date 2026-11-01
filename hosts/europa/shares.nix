@@ -3,6 +3,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   # CHANGE ME: your Unraid share names (Unraid → Shares tab), and which of
@@ -25,9 +26,25 @@ in {
   };
 
   # --- SMB ---------------------------------------------------------------
-  # Samba passwords can't be declared in Nix. After install, for each user:
-  #   sudo smbpasswd -a <user>
-  # (The user must exist in users.users and be in the "users" group.)
+  # Samba keeps its own password db, separate from the unix password, and it
+  # can't be set declaratively. Instead of running `smbpasswd -a` by hand,
+  # the smb-setpw service below loads it from a sops secret on every boot.
+  # Put the password in secrets/europa.yaml under the key `smb-angerzen`:
+  #   sops secrets/europa.yaml
+  sops.secrets.smb-angerzen.sopsFile = ../../secrets/europa.yaml;
+
+  systemd.services.smb-setpw = {
+    description = "Set the Samba password from the sops secret";
+    after = ["samba-smbd.service"];
+    wantedBy = ["multi-user.target"];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      pw=$(cat ${config.sops.secrets.smb-angerzen.path})
+      printf '%s\n%s\n' "$pw" "$pw" \
+        | ${pkgs.samba}/bin/smbpasswd -s -a ${config.var.username}
+    '';
+  };
+
   services.samba = {
     enable = true;
     openFirewall = true;

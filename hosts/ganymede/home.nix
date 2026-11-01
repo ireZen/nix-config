@@ -47,6 +47,9 @@
       uv
       go
       android-tools
+      sops          # edit secrets/*.yaml
+      age           # admin identity (age-keygen)
+      ssh-to-age    # convert a host's SSH pubkey to an age recipient
 
       # Utils
       zip
