@@ -10,7 +10,7 @@
 keys:
   - &admin    age1jcmg5wqk8426vkkkdw4lazuuh7ed82wpqjw53an5pfvh6hefwqxq4nff83
   - &ganymede age1674jzhd53mkv0t6ggaj0dm3xcgnxjdrjtxmlqshzc4yd5lm4vy3qtf4fz8
-  - &io       age1REPLACE_IO_HOST
+  - &io       age18qgra2vhnae00g5qwkpaapwn7hufeekumwfzkmtrt8x4yfmzvatq7w0f3l
   - &callisto age1REPLACE_CALLISTO_HOST
   - &europa   age1REPLACE_EUROPA_HOST
 
