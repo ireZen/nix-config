@@ -18,7 +18,7 @@ creation_rules:
   # Secrets every host needs (e.g. the user login password).
   - path_regex: secrets/common\.yaml$
     key_groups:
-      - age: [*admin, *ganymede]
+      - age: [*admin, *ganymede, *io]
 
   # europa-only secrets (e.g. the Samba password).
   - path_regex: secrets/europa\.yaml$
